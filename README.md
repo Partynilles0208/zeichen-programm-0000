@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profi Zeichne-Spiel</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+    h1 {
+      margin: 20px 0 10px 0;
+      color: #333;
+    }
+    #toolbar {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    #toolbar > * {
+      font-size: 14px;
+    }
+    canvas {
+      border: 2px solid #333;
+      background: #fff;
+      cursor: crosshair;
+      touch-action: none; /* für bessere touch-Unterstützung */
+    }
+    input[type="color"] {
+      width: 40px;
+      height: 30px;
+      padding: 0;
+      border: none;
+      cursor: pointer;
+    }
+    input[type="range"] {
+      cursor: pointer;
+    }
+    button {
+      cursor: pointer;
+      background-color: #333;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #555;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Profi Zeichne-Spiel</h1>
+  
+  <div id="toolbar">
+    <label>
+      Farbe: 
+      <input type="color" id="colorPicker" value="#000000" title="Farbe auswählen" />
+    </label>
+    
+    <label>
+      Pinselgröße: 
+      <input type="range" id="brushSize" min="1" max="50" value="5" title="Pinselgröße" />
+      <span id="brushSizeValue">5</span> px
+    </label>
+    
+    <button id="eraserBtn" title="Radiergummi umschalten">Radiergummi aus</button>
+    <button id="clearBtn" title="Alles löschen">Löschen</button>
+  </div>
+  
+  <canvas id="canvas" width="900" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const colorPicker = document.getElementById('colorPicker');
+    const brushSizeInput = document.getElementById('brushSize');
+    const brushSizeValue = document.getElementById('brushSizeValue');
+    const eraserBtn = document.getElementById('eraserBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let isEraser = false;
+
+    // Hintergrund initial weiß füllen
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    function startDrawing(e) {
+      drawing = true;
+      [lastX, lastY] = getPos(e);
+    }
+
+    function getPos(e) {
+      if (e.touches) {
+        // Touch Event
+        const rect = canvas.getBoundingClientRect();
+        return [
+          e.touches[0].clientX - rect.left,
+          e.touches[0].clientY - rect.top
+        ];
+      } else {
+        return [e.offsetX, e.offsetY];
+      }
+    }
+
+    function draw(e) {
+      if (!drawing) return;
+
+      const [x, y] = getPos(e);
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = brushSizeInput.value;
+
+      if (isEraser) {
+        ctx.strokeStyle = 'white';
+      } else {
+        ctx.strokeStyle = colorPicker.value;
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      [lastX, lastY] = [x, y];
+    }
+
+    function stopDrawing() {
+      drawing = false;
+    }
+
+    // Event Listener für Maus
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // Touch Events für mobile Geräte
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+    canvas.addEventListener('touchend', (e) => { e.preventDefault(); stopDrawing(e); });
+
+    // Pinselgröße anzeigen
+    brushSizeInput.addEventListener('input', () => {
+      brushSizeValue.textContent = brushSizeInput.value;
+    });
+
+    // Radiergummi-Button Umschaltung
+    eraserBtn.addEventListener('click', () => {
+      isEraser = !isEraser;
+      eraserBtn.textContent = isEraser ? 'Radiergummi an' : 'Radiergummi aus';
+      // Cursor wechseln
+      canvas.style.cursor = isEraser ? 'crosshair' : 'crosshair';
+    });
+
+    // Löschen-Button
+    clearBtn.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    });
+  </script>
+</body>
+</html>
